@@ -99,7 +99,7 @@ def main(cfg):
         episode.append((obs, None, reward, info))  # episode is a list of (obs, act, reward, info) tuples
                                                    # act has 2 fields: act['pose0'] and act['pose1']
         # Only save completed demonstrations.
-        if save_data and total_reward > 0.99:
+        if total_reward > 0.99: # and save_data:
             # dataset.add(seed, episode)
             total_rews += 1
 
@@ -107,7 +107,7 @@ def main(cfg):
         #     print("blender pickle saved to ", '{}/blender_demo_{}.pkl'.format(data_path, dataset.n_episodes))
         #     env.blender_recorder.save('{}/blender_demo_{}.pkl'.format(data_path, dataset.n_episodes))
 
-        print(f"Current Reward: {total_rews} / Episodes: {curr_run_eps}")
+        print(f"Cumulative Reward: {total_rews} / Episodes: {curr_run_eps}")
 
 if __name__ == '__main__':
     main()
