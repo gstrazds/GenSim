@@ -6,7 +6,7 @@ matplotlib
 opencv-python
 meshcat
 scipy
-scikit-image
+#scikit-image
 torch
 hydra-core
 ftfy

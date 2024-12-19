@@ -105,8 +105,8 @@ def main(cfg):
                 env.end_rec()
             continue
 
-        episode.append((obs, None, reward, info))
-
+        episode.append((obs, None, reward, info))  # episode is a list of (obs, act, reward, info) tuples
+                                                   # act has 2 fields: act['pose0'] and act['pose1']
         # Only save completed demonstrations.
         if save_data and total_reward > 0.99:
             dataset.add(seed, episode)

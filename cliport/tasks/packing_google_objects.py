@@ -52,7 +52,7 @@ instruction at each timestep."""
         object_ids = []
         bboxes = np.array(bboxes)
         scale_factor = 5
-        object_template = 'google/object-template_FNAME_COLOR_SCALE.urdf'
+        object_template = 'google/object-template.urdf' #'google/object-template_FNAME_COLOR_SCALE.urdf'
         chosen_objs, repeat_category = self.choose_objects(object_names, len(bboxes))
         object_descs = []
         for i, bbox in enumerate(bboxes):
