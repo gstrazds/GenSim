@@ -1,0 +1,25 @@
+# Data Generation
+
+defaults:
+  - config
+
+hydra:
+  run:
+    dir: ${root_dir}
+
+data_dir: ${root_dir}/data  # where to store dataset
+assets_root: ${root_dir}/cliport/environments/assets/
+disp: True  # visualize PyBullet
+shared_memory: False
+task: put-block-in-bowl 
+mode: train # 'train' or 'val' or 'test'
+save_data: False  # write episodes to disk
+
+max_eps: 3
+
+dataset:
+  type: 'single' # 'single' or 'multi'
+  images: True
+  cache: True # load episodes to memory instead of reading from disk
+  augment:
+    theta_sigma: 60 # rotation sigma in degrees; N(mu = 0, sigma = theta_sigma).
