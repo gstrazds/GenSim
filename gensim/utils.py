@@ -2,13 +2,18 @@ import os
 
 import numpy as np
 import os
-import hydra
+#import hydra
 import numpy as np
 import random
 
-from cliport import tasks
-from cliport.dataset import RavensDataset
-from cliport.environments.environment import Environment
+#from cliport import tasks
+#from cliport.dataset import RavensDataset
+#from cliport.environments.environment import Environment
+#import IPython
+#import pybullet as p
+#from datetime import datetime
+#import cv2
+#import json
 
 from pygments import highlight
 from pygments.lexers import PythonLexer
@@ -16,16 +21,11 @@ from pygments.formatters import TerminalFormatter
 import re
 
 import openai
-import IPython
 import time
-import pybullet as p
 import traceback
-from datetime import datetime
 from pprint import pprint
-import cv2
 import re
 import random
-import json
 import operator
 import csv
 import itertools

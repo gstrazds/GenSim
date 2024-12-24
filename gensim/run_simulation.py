@@ -1,20 +1,10 @@
-import numpy as np
 import os
 import hydra
-import random
 
-import re
 import openai
-import IPython
-import time
 import pybullet as p
-import traceback
 from datetime import datetime
 from pprint import pprint
-import cv2
-import re
-import random
-import json
 
 from gensim.agent import Agent
 from gensim.critic import Critic

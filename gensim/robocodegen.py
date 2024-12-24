@@ -6,7 +6,7 @@ import numpy as np
 import random
 
 from cliport import tasks
-from cliport.dataset import RavensDataset
+# from cliport.dataset import RavensDataset
 from cliport.environments.environment import Environment
 import IPython
 import random
@@ -28,10 +28,10 @@ def main(cfg):
 
     # Initialize scripted oracle agent and dataset.
     agent = task.oracle(env)
-    data_path = os.path.join(cfg['data_dir'], "{}-{}".format(cfg['task'], task.mode))
+    # data_path = os.path.join(cfg['data_dir'], "{}-{}".format(cfg['task'], task.mode))
     # dataset = RavensDataset(data_path, cfg, n_demos=0, augment=False)
-    print(f"Saving to: {data_path}")
-    print(f"Mode: {task.mode}")
+    # print(f"Saving to: {data_path}")
+    print(f"***** Task: {cfg['task']} mode={task.mode} lang_goal='{task.get_lang_goal()}'")
 
     # Train seeds are even and val/test seeds are odd. Test seeds are offset by 10000
     seed = -1 #dataset.max_seed

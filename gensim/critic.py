@@ -1,9 +1,6 @@
-import numpy as np
 import os
-import IPython
 
-import traceback
-import json
+# import traceback
 from gensim.utils import (
     save_text,
     add_to_txt,
