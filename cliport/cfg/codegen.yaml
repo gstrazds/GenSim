@@ -9,6 +9,7 @@ hydra:
 
 data_dir: ${root_dir}/data  # where to store dataset
 assets_root: ${root_dir}/cliport/environments/assets/
+prompt_folder: robot_script_generation_prompts # the prompt folder that stores the prompt chain
 disp: True  # visualize PyBullet
 shared_memory: False
 task: put-block-in-bowl 
