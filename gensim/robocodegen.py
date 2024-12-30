@@ -45,28 +45,7 @@ class RoboScriptGenAgent:
         self.chat_log = memory.chat_log
         self.use_template = cfg['use_template']
 
-    def get_task(self, task_names):
-        """Get language descriptions for the task"""
-        add_to_txt(self.chat_log, "================= Retrieve Task Spec...", with_print=True)
-
-        # res = generate_feedback(
-        #     task_prompt_text,
-        #     temperature=self.cfg["gpt_temperature"],
-        #     interaction_txt=self.chat_log,
-        # )
-
-        # Extract dictionary for task name, descriptions, and assets
-        task_def = self.memory. extract_dict(res, prefix="new_task")
-        try:
-            exec(task_def, globals())
-            self.new_task = new_task
-            return new_task
-        except:
-            self.new_task = {"task-name": "dummy", "assets-used": [], "task_descriptions": ""}
-            print(str(traceback.format_exc()))
-            return self.new_task
-
-    def api_review(self):
+    def api_review(self, task_name):
         """review the task api"""
         if os.path.exists(f"{self.prompt_folder}/cliport_prompt_api_template.txt"):
             add_to_txt(
@@ -74,22 +53,21 @@ class RoboScriptGenAgent:
             api_prompt_text = open(
                 f"{self.prompt_folder}/cliport_prompt_api_template.txt").read()
             if 'task' in self.cfg:
-                api_prompt_text = api_prompt_text.replace("TASK_NAME_TEMPLATE", self.cfg['task'])
-            # api_prompt_text = api_prompt_text.replace("TASK_STRING_TEMPLATE", str(self.new_task))
+                api_prompt_text = api_prompt_text.replace("TASK_NAME_TEMPLATE", task_name)
 
             res = generate_feedback(
                 api_prompt_text, temperature=0, interaction_txt=self.chat_log)
             print(res)
 
-    def _build_template_reference_prompt(self):
+    def _build_template_reference_prompt(self, task_spec):
         """ select which code reference to reference """
         if os.path.exists(f"{self.prompt_folder}/cliport_prompt_code_reference_selection_template.txt"):
             self.chat_log = add_to_txt(self.chat_log, "================= Code Reference!", with_print=True)
             code_reference_question = open(f'{self.prompt_folder}/cliport_prompt_code_reference_selection_template.txt').read()
-            code_reference_question = code_reference_question.replace("TASK_NAME_TEMPLATE", self.new_task["task-name"])
+            code_reference_question = code_reference_question.replace("TASK_NAME_TEMPLATE", task_spec["task-name"])
             code_reference_question = code_reference_question.replace("TASK_CODE_LIST_TEMPLATE", str(list(self.memory.online_code_buffer.keys())))
 
-            code_reference_question = code_reference_question.replace("TASK_STRING_TEMPLATE", str(self.new_task))
+            code_reference_question = code_reference_question.replace("TASK_STRING_TEMPLATE", str(task_spec))
             res = generate_feedback(code_reference_question, temperature=0., interaction_txt=self.chat_log)
             code_reference_cmd = extract_list(res, prefix='code_reference')
             exec(code_reference_cmd, globals())  # creates variable 'code_reference' which is a list of keys 
@@ -102,18 +80,18 @@ class RoboScriptGenAgent:
 
         return task_code_reference_replace_prompt
 
-    def implement_task(self):
+    def implement_task(self, task_spec):
         """Generate Code for the task"""
         code_prompt_text = open(f"{self.prompt_folder}/cliport_prompt_code_split_template.txt").read()
-        code_prompt_text = code_prompt_text.replace("TASK_NAME_TEMPLATE", self.new_task["task-name"])
+        code_prompt_text = code_prompt_text.replace("TASK_NAME_TEMPLATE", task_spec["task-name"])
 
         if self.use_template or os.path.exists(f"{self.prompt_folder}/cliport_prompt_code_reference_selection_template.txt"):
-            task_code_reference_replace_prompt = self._build_template_reference_prompt()
+            task_code_reference_replace_prompt = self._build_template_reference_prompt(task_spec)
             code_prompt_text = code_prompt_text.replace("TASK_CODE_REFERENCE_TEMPLATE", task_code_reference_replace_prompt)
 
         elif os.path.exists(f"{self.prompt_folder}/cliport_prompt_code_split_template.txt"):
             self.chat_log = add_to_txt(self.chat_log, "================= Code Generation!", with_print=True)
-            code_prompt_text = code_prompt_text.replace("TASK_STRING_TEMPLATE", str(self.new_task))
+            code_prompt_text = code_prompt_text.replace("TASK_STRING_TEMPLATE", str(task_spec))
 
         res = generate_feedback(
                 code_prompt_text, temperature=0, interaction_txt=self.chat_log)
@@ -136,6 +114,9 @@ class GenCodeRunner:
         self.critic = critic
         self.memory = memory
 
+        self.task_spec = None  #dict('task-name': task_name, ...)
+        self.task = None  # instance of cliport.tasks.Task
+
         self.code_generation_pass = False
         # statistics
         self.syntax_pass_rate = 0
@@ -155,8 +136,15 @@ class GenCodeRunner:
         print("=========================================================")
 
     def setup_env(self, task_name):
-        self.cfg['task'] = task_name
-        self.current_task_name = task_name
+        # self.cfg['task'] = task_name
+        add_to_txt(self.chat_log, f"================= Retrieve Task Spec ({task_name})...", with_print=True)
+
+        _default_task_spec = {"task-name": "dummy", "assets-used": [], "task_descriptions": ""}
+        task_spec = self.memory.online_task_buffer.get(task_name, None) #_default_task_spec )
+        if task_spec is None:
+            print(self.memory.online_task_buffer.keys())
+        current_task_name = task_spec['task-name']
+        self.task_spec = task_spec
         """ build the new task"""
         env = Environment(
                 self.cfg['assets_root'],
@@ -166,18 +154,19 @@ class GenCodeRunner:
                 record_cfg=[] #self.cfg['record']
             )
 
-        task = tasks.names[self.current_task_name]()  # an instance of the Task
+        task = tasks.names[current_task_name]()  # an instance of the Task
         task.mode = self.cfg['mode']
+        self.task = task
         # save_data = self.cfg['save_data']
 
         # Initialize scripted oracle agent and dataset.
         # expert = task.oracle(env)
-        data_path = os.path.join(self.cfg['data_dir'], "{}-{}".format(self.current_task_name, task.mode))
+        data_path = os.path.join(self.cfg['data_dir'], "{}-{}".format(current_task_name, task.mode))
         # dataset = RavensDataset(data_path, self.cfg, n_demos=0, augment=False)
         dataset = None
-        return task, env
+        return env
 
-    def run_one_episode(self, env, task, episode, seed, use_oracle=False):
+    def run_one_episode(self, env, episode, seed, use_oracle=False):
         """ run the new task for one episode """
         add_to_txt(
                 self.chat_log, f"================= TRIAL: {self.curr_trials}", with_print=True)
@@ -185,17 +174,17 @@ class GenCodeRunner:
         random.seed(seed)
 
         print(f"{'Oracle ' if use_oracle else ''}demo: {self.n_episodes + 1}/{self.cfg['max_eps']} | Seed: {seed}")
-        expert = task.oracle(env)
-        env.set_task(task)
+        expert = self.task.oracle(env)
+        env.set_task(self.task)
         obs = env.reset()
-        print(f"***** Task: {type(task).__name__} mode={task.mode} lang_goal='{task.get_lang_goal()}'")
+        print(f"***** Task: {type(self.task).__name__} mode={self.task.mode} lang_goal='{self.task.get_lang_goal()}'")
 
         info = env.info
         reward = 0
         episode_reward = 0
 
         # Rollout expert policy
-        for _ in range(task.max_steps):
+        for _ in range(self.task.max_steps):
             act = expert.act(obs, info)
             episode.append((obs, act, reward, info))
             lang_goal = info['lang_goal']
@@ -208,9 +197,19 @@ class GenCodeRunner:
                                                    # act has 2 fields: act['pose0'] and act['pose1']
         return episode_reward
 
-    def run_n_episodes(self, env, task, n_eps:int = 1, initial_seed=-2, use_oracle=False):
+    def run_n_episodes(self, env, n_eps:int = 1, initial_seed=-2, use_oracle=False):
         num_run_eps = 0
         total_rews = 0
+
+        if initial_seed < 0:
+            if self.task.mode == 'train':
+                initial_seed = -2
+            elif self.task.mode == 'val': # NOTE: beware of increasing val set to >100
+                initial_seed = -1
+            elif self.task.mode == 'test':
+                initial_seed = -1 + 10000
+            else:
+                raise Exception("Invalid mode. Valid options: train, val, test")
 
         current_seed = initial_seed
         while num_run_eps < n_eps:
@@ -220,7 +219,7 @@ class GenCodeRunner:
             num_run_eps += 1
 
             try:
-                episode_reward = self.run_one_episode(env, task, episode, current_seed, use_oracle=use_oracle)
+                episode_reward = self.run_one_episode(env, episode, current_seed, use_oracle=use_oracle)
             except Exception as e:
                 to_print = highlight(f"{str(traceback.format_exc())}", PythonLexer(), TerminalFormatter())
                 print(to_print)
@@ -236,18 +235,17 @@ class GenCodeRunner:
             print(f"*** {'(Oracle) ' if use_oracle else ''}Total Reward: {total_rews} / Episodes: {num_run_eps}")
         return total_rews
 
-    def code_generation(self, task: tasks.Task):
+    def code_generation(self):   #, task_spec, task: tasks.Task):
         """ generate robot control script through interactions of agent and critic """
         self.code_generation_pass = True
-        # _task_name = self.current_task_name
+        # _task_name = task_spec['task-name']
         mkdir_if_missing(self.cfg['model_output_dir'])
 
         try:
             start_time = time.time()
-            # self.generated_task = self.agent.propose_task(self.generated_task_names)
-            # self.agent.api_review()
+            # self.agent.api_review(fask_spec['task-name'])
 
-            self.generated_code = self.agent.implement_task()  # self.current_task_name
+            self.generated_code = self.agent.implement_task(self.task_spec)  # _task_name
 
             if self.critic:
                 self.critic.error_review(self.generated_code)
@@ -283,28 +281,18 @@ def main(cfg):
     critic = None #Critic(cfg, memory)
     runner = GenCodeRunner(cfg, agent, critic, memory)
 
-    task, env = runner.setup_env(cfg['task'])
+    env = runner.setup_env(cfg['task'])
     # Train seeds are even and val/test seeds are odd. Test seeds are offset by 10000
     seed = -1 #dataset.max_seed
     max_eps = cfg['max_eps'] # 3 * cfg['n']
 
-    if seed < 0:
-        if task.mode == 'train':
-            seed = -2
-        elif task.mode == 'val': # NOTE: beware of increasing val set to >100
-            seed = -1
-        elif task.mode == 'test':
-            seed = -1 + 10000
-        else:
-            raise Exception("Invalid mode. Valid options: train, val, test")
-
     # if 'regenerate_data' in cfg:
     #     dataset.n_episodes = 0
 
-    runner.run_n_episodes(env, task, n_eps=max_eps, initial_seed=seed, use_oracle=True)
+    runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=True)
     # print()
-    runner.code_generation(task)  # runner.current_task_name
-    runner.run_n_episodes(env, task, n_eps=max_eps, initial_seed=seed, use_oracle=False)
+    runner.code_generation()  # runner.task_spec['task-name']
+    runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
     print()
 if __name__ == '__main__':
     main()

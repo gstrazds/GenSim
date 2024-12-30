@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import IPython
 
 import random
 import json
@@ -96,7 +95,7 @@ class Memory:
 
     def save_task_to_offline_topdown(self, new_task, code, generate_task_path='topdown_generated_tasks'):
         new_file_path = new_task["task-name"].replace("-", "_") + ".py"
-        generated_task_codes.append(new_file_path)
+        # generated_task_codes.append(new_file_path)
 
         python_file_path = f"cliport/{generate_task_path}/{new_file_path}"
         print(f"save {new_task['task-name']} to ", python_file_path)
@@ -116,11 +115,12 @@ class Memory:
         base_task_codes = json.load(open(base_task_code_path))
 
         if self.cfg["load_memory"]:
+            print("Loading task data from {self.data_path}")
             generated_task_path = os.path.join(self.data_path, "generated_tasks.json")
             generated_asset_path = os.path.join(self.data_path, "generated_assets.json")
             generated_task_code_path = os.path.join(self.data_path, "generated_task_codes.json")
 
-            print("original base task num:", len(base_tasks))
+            print("  # original base tasks:", len(base_tasks))
             base_tasks.update(json.load(open(generated_task_path)))
             # base_assets.update(json.load(open(generated_asset_path)))
 
@@ -128,5 +128,5 @@ class Memory:
                 if task not in base_task_codes:
                     base_task_codes.append(task)
 
-            print("current base task num:", len(base_tasks))
+            print("  # current num tasks:", len(base_tasks))
         return base_tasks, base_assets, base_task_codes
