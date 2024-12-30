@@ -18,9 +18,15 @@ save_data: False  # write episodes to disk
 
 max_eps: 3
 
-dataset:
-  type: 'single' # 'single' or 'multi'
-  images: True
-  cache: True # load episodes to memory instead of reading from disk
-  augment:
-    theta_sigma: 60 # rotation sigma in degrees; N(mu = 0, sigma = theta_sigma).
+# Save and Load Memory
+prompt_data_path: prompts/data/
+save_memory: False # save the assets, task code, task descriptions generated offline
+load_memory: True # load the assets, task code, task descriptions generated offline
+# use_template: False # use template when constructing prompts, better for scaling
+
+# dataset:
+#   type: 'single' # 'single' or 'multi'
+#   images: True
+#   cache: True # load episodes to memory instead of reading from disk
+#   augment:
+#     theta_sigma: 60 # rotation sigma in degrees; N(mu = 0, sigma = theta_sigma).

@@ -45,45 +45,18 @@ class RoboScriptGenAgent:
         self.chat_log = memory.chat_log
         self.use_template = cfg['use_template']
 
-    def gen_robot_script(self, task_names):
-        """Language descriptions for the task"""
-        add_to_txt(self.chat_log, "================= Task and Asset Design!", with_print=True)
+    def get_task(self, task_names):
+        """Get language descriptions for the task"""
+        add_to_txt(self.chat_log, "================= Retrieve Task Spec...", with_print=True)
 
-        if self.use_template:
-            task_prompt_text = open(f"{self.prompt_folder}/cliport_prompt_task.txt").read()
-            task_asset_replacement_str = format_dict_prompt(self.memory.online_asset_buffer, self.cfg['task_asset_candidate_num'])
-            task_prompt_text = task_prompt_text.replace("TASK_ASSET_PROMPT", task_asset_replacement_str)
-
-            task_desc_replacement_str = format_dict_prompt(self.memory.online_task_buffer, self.cfg['task_description_candidate_num'])
-            print("prompt task description candidates:")
-            print(task_desc_replacement_str)
-            task_prompt_text = task_prompt_text.replace("TASK_DESCRIPTION_PROMPT", task_desc_replacement_str)
-
-            if len(self.cfg['target_task_name']) > 0:
-                task_prompt_text = task_prompt_text.replace("TARGET_TASK_NAME", self.cfg['target_task_name'])
-
-            # print("Template Task PROMPT: ", task_prompt_text)
-        else:
-            task_prompt_text = open(f"{self.prompt_folder}/cliport_prompt_task.txt").read()
-
-        # maximum number
-        print("online_task_buffer size:", len(self.memory.online_task_buffer))
-        total_tasks = self.memory.online_task_buffer
-
-        MAX_NUM = 10
-        if len(total_tasks) > MAX_NUM:
-            total_tasks = dict(random.sample(total_tasks.items(), MAX_NUM))
-
-        task_prompt_text = task_prompt_text.replace("PAST_TASKNAME_TEMPLATE", format_dict_prompt(total_tasks))
-
-        res = generate_feedback(
-            task_prompt_text,
-            temperature=self.cfg["gpt_temperature"],
-            interaction_txt=self.chat_log,
-        )
+        # res = generate_feedback(
+        #     task_prompt_text,
+        #     temperature=self.cfg["gpt_temperature"],
+        #     interaction_txt=self.chat_log,
+        # )
 
         # Extract dictionary for task name, descriptions, and assets
-        task_def = extract_dict(res, prefix="new_task")
+        task_def = self.memory. extract_dict(res, prefix="new_task")
         try:
             exec(task_def, globals())
             self.new_task = new_task
@@ -108,7 +81,7 @@ class RoboScriptGenAgent:
                 api_prompt_text, temperature=0, interaction_txt=self.chat_log)
             print(res)
 
-    def template_reference_prompt(self):
+    def _build_template_reference_prompt(self):
         """ select which code reference to reference """
         if os.path.exists(f"{self.prompt_folder}/cliport_prompt_code_reference_selection_template.txt"):
             self.chat_log = add_to_txt(self.chat_log, "================= Code Reference!", with_print=True)
@@ -131,13 +104,11 @@ class RoboScriptGenAgent:
 
     def implement_task(self):
         """Generate Code for the task"""
-        return None, None
-    
         code_prompt_text = open(f"{self.prompt_folder}/cliport_prompt_code_split_template.txt").read()
         code_prompt_text = code_prompt_text.replace("TASK_NAME_TEMPLATE", self.new_task["task-name"])
 
         if self.use_template or os.path.exists(f"{self.prompt_folder}/cliport_prompt_code_reference_selection_template.txt"):
-            task_code_reference_replace_prompt = self.template_reference_prompt()
+            task_code_reference_replace_prompt = self._build_template_reference_prompt()
             code_prompt_text = code_prompt_text.replace("TASK_CODE_REFERENCE_TEMPLATE", task_code_reference_replace_prompt)
 
         elif os.path.exists(f"{self.prompt_folder}/cliport_prompt_code_split_template.txt"):
@@ -195,7 +166,7 @@ class GenCodeRunner:
                 record_cfg=[] #self.cfg['record']
             )
 
-        task = tasks.names[self.current_task_name]()
+        task = tasks.names[self.current_task_name]()  # an instance of the Task
         task.mode = self.cfg['mode']
         # save_data = self.cfg['save_data']
 
@@ -265,19 +236,21 @@ class GenCodeRunner:
             print(f"*** {'(Oracle) ' if use_oracle else ''}Total Reward: {total_rews} / Episodes: {num_run_eps}")
         return total_rews
 
-    def code_generation(self):
+    def code_generation(self, task: tasks.Task):
         """ generate robot control script through interactions of agent and critic """
         self.code_generation_pass = True
+        # _task_name = self.current_task_name
         mkdir_if_missing(self.cfg['model_output_dir'])
 
         try:
             start_time = time.time()
             # self.generated_task = self.agent.propose_task(self.generated_task_names)
-            self.agent.api_review()
-            if self.critic:
-                self.critic.error_review(self.generated_task)
+            # self.agent.api_review()
 
-            self.generated_code, self.curr_task_name = self.agent.implement_task()
+            self.generated_code = self.agent.implement_task()  # self.current_task_name
+
+            if self.critic:
+                self.critic.error_review(self.generated_code)
             # self.generated_task_name = self.generated_task["task-name"]
 
             # self.generated_tasks.append(self.generated_task)
@@ -289,7 +262,6 @@ class GenCodeRunner:
             print("Task Creation Exception:", to_print)
             self.code_generation_pass = False
 
-        # self.curr_task_name = self.generated_task['task-name']
         print("task creation time {:.3f}".format(time.time() - start_time))
 
 
@@ -331,7 +303,7 @@ def main(cfg):
 
     runner.run_n_episodes(env, task, n_eps=max_eps, initial_seed=seed, use_oracle=True)
     # print()
-    runner.code_generation()
+    runner.code_generation(task)  # runner.current_task_name
     runner.run_n_episodes(env, task, n_eps=max_eps, initial_seed=seed, use_oracle=False)
     print()
 if __name__ == '__main__':
