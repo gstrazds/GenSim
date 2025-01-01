@@ -11,6 +11,8 @@ import time
 from datetime import datetime
 from pprint import pprint
 
+from typing import Dict  #, List, Union, Optional
+
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import TerminalFormatter
@@ -60,12 +62,15 @@ class EnvironmentExt(Environment):
     def add_object(self, urdf, pose, category='rigid', color=None, **kwargs):
         """List of (fixed, rigid, or deformable) objects in env."""
         
+        input_color = color  # base class modifies the color arg
         obj_id = super().add_object(urdf, pose, category, color, **kwargs)
-
+    
         obj_class = _get_obj_class_from_urdf(urdf)
         self.obj_classes[obj_id] = obj_class
         print(f"obj_classes[{obj_id}] = {obj_class}")
-        if color:
+        # if input_color is not None:
+        #     color = input_color
+        if color is not None:
             self.obj_colors[obj_id] = color
             print(f"obj_colors[{obj_id}] = {color}")
         return obj_id
@@ -84,7 +89,13 @@ class EnvironmentExt(Environment):
             return color
         return name_for_color(color)            
 
-        
+class RobotScript:
+    def __init__(self, env:EnvironmentExt, task_spec:Dict[str,str]):
+        self.env = env
+        self.task_name = task_spec['task-name']
+        self.instruction = task_spec['task-description']
+
+
 class RoboScriptGenAgent:
     """
     class that gemerates robot control script for simulation environments
@@ -136,6 +147,8 @@ class RoboScriptGenAgent:
         """Generate Code for the task"""
         code_prompt_text = open(f"{self.prompt_folder}/cliport_prompt_code_split_template.txt").read()
         code_prompt_text = code_prompt_text.replace("TASK_NAME_TEMPLATE", task_spec["task-name"])
+        code_prompt_text = code_prompt_text.replace("TASK_SPEC_TEMPLATE", 
+                        f"{{'task-name': '{task_spec['task-name']}', 'task-description': \"{task_spec['task-description']}\"}}")
 
         if self.use_template or os.path.exists(f"{self.prompt_folder}/cliport_prompt_code_reference_selection_template.txt"):
             task_code_reference_replace_prompt = self._build_template_reference_prompt(task_spec)
@@ -145,6 +158,8 @@ class RoboScriptGenAgent:
             self.chat_log = add_to_txt(self.chat_log, "================= Code Generation!", with_print=True)
             code_prompt_text = code_prompt_text.replace("TASK_STRING_TEMPLATE", str(task_spec))
 
+        print(code_prompt_text)
+        return None
         res = generate_feedback(
                 code_prompt_text, temperature=0, interaction_txt=self.chat_log)
         code, task_name = extract_code(res)
@@ -155,7 +170,7 @@ class RoboScriptGenAgent:
             print("Save code to:", self.model_output_dir, task_name + "_code_output")
             save_text(self.model_output_dir, task_name + "_code_output", code)
 
-        return code, task_name
+        return code
 
 
 class GenCodeRunner:
@@ -194,7 +209,9 @@ class GenCodeRunner:
         _default_task_spec = {"task-name": "dummy", "assets-used": [], "task_descriptions": ""}
         task_spec = self.memory.online_task_buffer.get(task_name, None) #_default_task_spec )
         if task_spec is None:
-            print(self.memory.online_task_buffer.keys())
+            print("TASK SPEC not found!!!", self.memory.online_task_buffer.keys())
+        else:
+            print(task_spec)
         current_task_name = task_spec['task-name']
         self.task_spec = task_spec
         """ build the new task"""
@@ -357,7 +374,7 @@ def main(cfg):
             print()
         print()
     # print()
-    #runner.code_generation()  # runner.task_spec['task-name']
+    runner.code_generation()  # runner.task_spec['task-name']
     #runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
     print()
 if __name__ == '__main__':

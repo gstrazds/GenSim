@@ -26,7 +26,7 @@ class PlaceRedInGreen(Task):
         bowl_poses = []
         for _ in range(n_bowls):
             bowl_pose = self.get_random_pose(env, obj_size=bowl_size)
-            env.add_object(urdf=bowl_urdf, pose=bowl_pose, category='fixed')
+            env.add_object(urdf=bowl_urdf, pose=bowl_pose, category='fixed', color='green')
             bowl_poses.append(bowl_pose)
 
         # Add blocks.
@@ -36,7 +36,7 @@ class PlaceRedInGreen(Task):
         block_urdf = 'stacking/block.urdf'
         for _ in range(n_blocks):
             block_pose = self.get_random_pose(env, obj_size=block_size)
-            block_id = env.add_object(block_urdf, block_pose)
+            block_id = env.add_object(block_urdf, block_pose, color='red')
             blocks.append(block_id)
 
         # Goal: each red block is in a different green bowl.
