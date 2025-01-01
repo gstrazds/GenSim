@@ -19,6 +19,7 @@ from cliport import tasks
 # from cliport.dataset import RavensDataset
 from cliport.environments.environment import Environment
 from gensim.memory import Memory
+from cliport.utils.utils import COLORS_NAMES, COLORS
 from gensim.utils import (
     mkdir_if_missing,
     save_text,
@@ -33,6 +34,57 @@ from gensim.utils import (
     generate_feedback,
 )
 
+def _get_obj_class_from_urdf(urdf:str) -> str:
+    return urdf
+
+
+def name_for_color(color) -> str:
+    if type(color) is str:
+        return color
+    assert len(color) >= 3, f"Expected {color} to be a tuple or list of length 3 or 4" 
+    for color_name in COLORS_NAMES:
+        ref_color = COLORS[color_name]
+        if ref_color[0] == color[0] and ref_color[1] == color[1] and ref_color[2] == color[2]:
+            return color_name
+    return "UNKNOWN_COLOR"
+
+def print_pose(pose):
+    print("({:0.3f} {:0.3f} {:0.3f}) ({:0.3f} {:0.3f} {:0.3f})".format(pose[0][0], pose[0][1], pose[0][2], pose[1][0], pose[1][1], pose[1][2]), end="")
+
+class EnvironmentExt(Environment):
+    def __init__(self, assets_root, task=None, disp=False, shared_memory=False, hz=240, record_cfg=None):
+        super().__init__(assets_root, task, disp, shared_memory, hz, record_cfg)
+        self.obj_colors = {}
+        self.obj_classes = {}
+
+    def add_object(self, urdf, pose, category='rigid', color=None, **kwargs):
+        """List of (fixed, rigid, or deformable) objects in env."""
+        
+        obj_id = super().add_object(urdf, pose, category, color, **kwargs)
+
+        obj_class = _get_obj_class_from_urdf(urdf)
+        self.obj_classes[obj_id] = obj_class
+        print(f"obj_classes[{obj_id}] = {obj_class}")
+        if color:
+            self.obj_colors[obj_id] = color
+            print(f"obj_colors[{obj_id}] = {color}")
+        return obj_id
+    
+    def set_color(self, obj_id, color):
+        self.obj_colors[obj_id] = color
+        print(f"set_color({obj_id}) = {color}")
+        return super().set_color(obj_id, color)
+
+    def get_object_class(self, obj_id) -> str:
+        return self.obj_classes.get(obj_id, None)
+
+    def get_object_color(self, obj_id) -> str:
+        color = self.obj_colors.get(obj_id, None)
+        if color is None:
+            return color
+        return name_for_color(color)            
+
+        
 class RoboScriptGenAgent:
     """
     class that gemerates robot control script for simulation environments
@@ -146,7 +198,7 @@ class GenCodeRunner:
         current_task_name = task_spec['task-name']
         self.task_spec = task_spec
         """ build the new task"""
-        env = Environment(
+        env = EnvironmentExt(
                 self.cfg['assets_root'],
                 disp=self.cfg['disp'],
                 shared_memory=self.cfg['shared_memory'],
@@ -290,9 +342,23 @@ def main(cfg):
     #     dataset.n_episodes = 0
 
     runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=True)
+    print(f"obj_colors = {env.obj_colors}")
+    print(f"obj_classes = {env.obj_classes}")
+    if "fixed" in env.obj_ids and len(env.obj_ids["fixed"]) > 0:
+        print("FIXED objects:")
+        for obj_id in env.obj_ids['fixed']:
+            print(f"\t({obj_id}]: type={env.get_object_class(obj_id)} color={env.get_object_color(obj_id)}")
+        print()
+    if "rigid" in env.obj_ids and len(env.obj_ids["rigid"]) > 0:
+        print("Moveable rigid objects:")
+        for obj_id in env.obj_ids['rigid']:
+            print(f"\t({obj_id}]: type={env.get_object_class(obj_id)} color={env.get_object_color(obj_id)} ", end="")
+            print_pose(env.get_object_pose(obj_id))
+            print()
+        print()
     # print()
-    runner.code_generation()  # runner.task_spec['task-name']
-    runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
+    #runner.code_generation()  # runner.task_spec['task-name']
+    #runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
     print()
 if __name__ == '__main__':
     main()
