@@ -49,8 +49,9 @@ class PlaceBlueBlocksInRedBowls(RobotScript):
         if bowl_id is None:
             return None
         pick_pose = env.getPickPose(block_id)
-        place_pose = env.getPlacePose(bowl_id)  # a pose that is appropriate for placing on or in the target
-        return {'pose0': pick_pose, 'pose1': place_pose}
+        place_pose = env.getPlacePose(block_id, bowl_id)  # a pose that's appropriate for placing the first object onto or in the target object
+
+        return PickAndPlaceAction(pick_pose, place_pose)  # arguments for performing a pick and place action in the environment
 
 """
 

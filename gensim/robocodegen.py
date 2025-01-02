@@ -55,6 +55,27 @@ def name_for_color(color) -> str:
 def print_pose(pose):
     print("({:0.3f} {:0.3f} {:0.3f}) ({:0.3f} {:0.3f} {:0.3f})".format(pose[0][0], pose[0][1], pose[0][2], pose[1][0], pose[1][1], pose[1][2]), end="")
 
+class PickAndPlaceAction:
+    """ An Action to be performed in the environment:
+      Indicates that the robot should move its end effector to the 6 Dof pose pick_pose,
+      pick up the object that is expected to be there,
+      then move to place_pose and release the object """
+
+    def __init__(self, pick_pose, place_pose, obj_id):
+        self.pick_pose = pick_pose
+        self.place_pose = place_pose
+        self.obj_id = obj_id
+
+    def __getitem__(self, arg):
+        """ For compatibility with dictionary-based actions (such as are expected to be passed as an argument to env.step()) --
+            allows access to action.pick_pose as action['pose0'] and action.place_pose as action['pose1'] """
+        if arg == 'pose0':
+            return self.pick_pose
+        elif arg == 'pose1':
+            return self.place_pose
+        return getattr(self, arg)
+
+
 class EnvironmentExt(Environment):
     def __init__(self, assets_root, task=None, disp=False, shared_memory=False, hz=240, record_cfg=None):
         super().__init__(assets_root, task, disp, shared_memory, hz, record_cfg)
@@ -119,6 +140,17 @@ class EnvironmentExt(Environment):
 
     def is_rigid(self, obj_id) -> bool:
         return not self.is_deformable(obj_id)
+
+    def get_pick_pose(self, obj_id):
+        """ returns an estimate of the object's current 6 DoF pose,
+          useful as the first argument for a Pick and Place action """
+        return None
+
+    def get_place_pose(self, obj_id, target_id):
+        """ returns a 6 DoF pose for the object identified by obj_id that is
+          appropriate for placing it on or into the specified target object or zone
+        """
+        return None
 
 class RobotScript:
     def __init__(self, env:EnvironmentExt, task_name:str, instructions:str):
