@@ -1,93 +1,60 @@
-Now I will provide you some reference code and than you can write the code for the task:
+Now I will provide you some reference code and then you can write the code for the task:
 TASK_SPEC_TEMPLATE
 
-Examples:
+Examples of implementations for similar tasks:
 
 for {'task-name': "packing-shapes", 'task-description': "pick up blue blocks and place them into red bowls"}
 """
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Any
 from gensim.robocodegen import RobotScript, EnvironmentExt
-from cliport.utils import utils
 import pybullet as p
 
 
 class PlaceBlueBlocksInRedBowls(RobotScript):
-    """pick up red blocks and place them into green bowls."""
+    """pick up blue blocks and place them into red bowls."""
 
-    def __init__(self, env:EnvironmentExt, task_spec:Dict[str,str], task):
-        super().__init__(env, task_spec)
-        self.oracle = task.oracle(env)
+    def __init__(self, env: EnvironmentExt, task_spec: Dict[str, str]):
+        super().__init__(env, task_name: task_spec['task-name'], instructions: task_spec['task-description'])
+        scene_objects = env.detect_objects() # obtain a list of all the visible objects
+
+        # a list of blocks that are blue
+        self.blue_blocks = list(filter(lambda oid: env.is_object_type(oid, 'block') and env.is_object_color(oid, 'blue'), scene_objects))
+
+        # a list of bowls that are red
+        self.red_bowls = list(filter(lambda oid: env.is_object_type(oid, 'bowl') and env.is_object_color(oid, 'red'), scene_objects))
+        self.current_target_index = -1
+
+    def get_target_obj_id(self):
+        if not self.red_bowls:  # if there are no target bowls available
+            self.current_target_index = -1
+        else:
+            # cycle through the available target bowls
+            self.current_target_index += 1
+            if self.current_target_index >= len(self.red_bowls):
+                self.current_target_index = 0
+        if self.current_target_index >= 0:
+            return self.red_bowls[self.current_target_index]
+        return None
 
     def act(self, obs, info):
-        return self.oracle(obs, info)
+        ''' Each time this method is invoked, move one blue block into a red bowl.
+        In order to distribute them as evenly as possible, we cycle through the available bowls.
+        '''
+
+        if not self.blue_blocks:  # if there are no more blue blocks available, there's nothing to do.
+            return None
+        block_id = self.blue_blocks.pop()  # select one blue block and remove it from the list of blocks that need to be moved
+        bowl_id = self.get_target_obj_id()
+        if bowl_id is None:
+            return None
+        pick_pose = env.getPickPose(block_id)
+        place_pose = env.getPlacePose(bowl_id)  # a pose that is appropriate for placing on or in the target
+        return {'pose0': pick_pose, 'pose1': place_pose}
 
 """
-"""
-import numpy as np
-from cliport.tasks.task import Task
-from cliport.utils import utils
-import pybullet as p
-
-class StackBlockPyramid(Task):
-    """Build a pyramid of colored blocks in a color sequence"""
-
-    def __init__(self):
-        super().__init__()
-        self.max_steps = 12
-        self.lang_template = "make the {row} row with {blocks}"
-        self.task_completed_desc = "done stacking block pyramid."
-        self.additional_reset()
-
-    def reset(self, env):
-        super().reset(env)
-
-        # Add base.
-        base_size = (0.05, 0.15, 0.005)
-        base_urdf = 'stacking/stand.urdf'
-        base_pose = self.get_random_pose(env, base_size)
-        env.add_object(base_urdf, base_pose, category='fixed')
-
-        # Block colors.
-        colors = [
-            utils.COLORS['purple'], utils.COLORS['blue'], utils.COLORS['green'],
-            utils.COLORS['yellow'], utils.COLORS['orange'], utils.COLORS['red']
-        ]
-
-        # Add blocks.
-        block_size = (0.04, 0.04, 0.04)
-        block_urdf = 'stacking/block.urdf'
-
-        objs = []
-        for i in range(6):
-            block_pose = self.get_random_pose(env, block_size)
-            block_id = env.add_object(block_urdf, block_pose, color=colors[i])
-            objs.append(block_id)
-
-        # IMPORTANT Associate placement locations for goals.
-        place_pos = [(0, -0.05, 0.03), (0, 0, 0.03),
-                     (0, 0.05, 0.03), (0, -0.025, 0.08),
-                     (0, 0.025, 0.08), (0, 0, 0.13)]
-        targs = [(utils.apply(base_pose, i), base_pose[1]) for i in place_pos]
-
-        # Goal: blocks are stacked in a pyramid (bottom row: green, blue, purple).
-        language_goal = self.lang_template.format(blocks="the green, blue and purple blocks", row="bottom")
-        self.add_goal(objs=objs[:3], matches=np.ones((3, 3)), targ_poses=targs[:3], replace=False,
-                rotations=True, metric='pose', params=None, step_max_reward=1 / 2, symmetries=[np.pi/2]*3, language_goal=language_goal)
-
-        # Goal: blocks are stacked in a pyramid (middle row: yellow, orange).
-        language_goal = self.lang_template.format(blocks="the yellow and orange blocks", row="middle")      
-        self.add_goal(objs=objs[3:5], matches=np.ones((2, 2)), targ_poses=targs[3:5], replace=False,
-                rotations=True, metric='pose', params=None, step_max_reward=1 / 3, symmetries=[np.pi/2]*2, language_goal=language_goal)
-
-        # Goal: blocks are stacked in a pyramid (top row: red).
-        language_goal = self.lang_template.format(blocks="the red block", row="top")
-        self.add_goal(objs=objs[5:], matches=np.ones((1, 1)), targ_poses=targs[5:], replace=False,
-                rotations=True, metric='pose', params=None, step_max_reward=1 / 6, symmetries=[np.pi/2]*1, language_goal=language_goal)
-"""
 
 
+You should implement the task as a subclass of RobotScript, with a method with signature 'act(self, obs: str, info: Dict[str, Any])'. Do not use libraries, functions, and assets that you don't know. You can use methods from numpy or pybullet, if needed. You do not need other extra helper functions. Comment the code liberally to explain what each piece does and why it's written that way.
 
-Do not use libraries, functions, and assets that you don't know. For each object, try to describe its color, size, category in the task first before you write the code. You do not need extra helper functions. Comment the code liberally to explain what each piece does and why it's written that way.  Note that the number of language goals usually match the number of motion goals, since they should correspond to each other.
-
-Now write the code for the task "TASK_NAME_TEMPLATE" in python code block starting with ```python.  Reminder: TASK_STRING_TEMPLATE 
+Now write the code for the task "TASK_NAME_TEMPLATE" in a python code block starting with ```python.  Reminder: TASK_STRING_TEMPLATE

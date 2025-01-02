@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from pprint import pprint
 
-from typing import Dict  #, List, Union, Optional
+from typing import Dict, List, Sequence, Union, Optional
 
 from pygments import highlight
 from pygments.lexers import PythonLexer
@@ -36,9 +36,11 @@ from gensim.utils import (
     generate_feedback,
 )
 
-def _get_obj_class_from_urdf(urdf:str) -> str:
-    return urdf
+UNKNOWN_COLOR = "UNKNOWN_COLOR"
+UNKNOWN_OBJECT_TYPE = "UNKNOWN_OBJ_TYPE"
 
+def _get_obj_class_from_urdf(urdf_filename: str) -> str:
+    return urdf_filename
 
 def name_for_color(color) -> str:
     if type(color) is str:
@@ -48,7 +50,7 @@ def name_for_color(color) -> str:
         ref_color = COLORS[color_name]
         if ref_color[0] == color[0] and ref_color[1] == color[1] and ref_color[2] == color[2]:
             return color_name
-    return "UNKNOWN_COLOR"
+    return UNKNOWN_COLOR
 
 def print_pose(pose):
     print("({:0.3f} {:0.3f} {:0.3f}) ({:0.3f} {:0.3f} {:0.3f})".format(pose[0][0], pose[0][1], pose[0][2], pose[1][0], pose[1][1], pose[1][2]), end="")
@@ -67,33 +69,62 @@ class EnvironmentExt(Environment):
     
         obj_class = _get_obj_class_from_urdf(urdf)
         self.obj_classes[obj_id] = obj_class
-        print(f"obj_classes[{obj_id}] = {obj_class}")
+        # print(f"obj_classes[{obj_id}] = {obj_class}")
+
         # if input_color is not None:
         #     color = input_color
         if color is not None:
             self.obj_colors[obj_id] = color
-            print(f"obj_colors[{obj_id}] = {color}")
+            # print(f"obj_colors[{obj_id}] = {color}")
         return obj_id
     
     def set_color(self, obj_id, color):
         self.obj_colors[obj_id] = color
-        print(f"set_color({obj_id}) = {color}")
+        # print(f"set_color({obj_id}) = {color}")
         return super().set_color(obj_id, color)
 
-    def get_object_class(self, obj_id) -> str:
-        return self.obj_classes.get(obj_id, None)
+    def _get_object_class_str(self, obj_id) -> str:
+        obj_urdf_str = self.obj_classes.get(obj_id, None)
+        if obj_urdf_str:
+            return obj_urdf_str.lower()
+        return UNKNOWN_OBJECT_TYPE
 
-    def get_object_color(self, obj_id) -> str:
+    def detect_objects(self) -> Sequence[int]:
+        all_obj_ids = []
+        for _category_key_, list_of_objids in self.obj_ids.items():
+            assert _category_key_ in ['fixed', 'rigid', 'deformable']
+            all_obj_ids += list_of_objids
+        return all_obj_ids
+
+    def get_object_color_name(self, obj_id) -> str:
         color = self.obj_colors.get(obj_id, None)
         if color is None:
-            return color
+            return UNKNOWN_COLOR
         return name_for_color(color)            
 
+    def is_object_type(self, obj_id, type_name: str) -> bool:
+        return type_name in self._get_object_class_str(obj_id)
+
+    def is_object_color(self, obj_id, color_name: str) -> bool:
+        return color_name in self.get_object_color_name(obj_id)
+
+    def is_fixed(self, obj_id) -> bool:
+        assert 'fixed' in self.obj_ids
+        return obj_id in self.obj_ids['fixed']
+
+    def is_deformable(self, obj_id) -> bool:
+        if 'deformable' in self.obj_ids:
+            return obj_id in self.obj_ids['deformable']
+        return False
+
+    def is_rigid(self, obj_id) -> bool:
+        return not self.is_deformable(obj_id)
+
 class RobotScript:
-    def __init__(self, env:EnvironmentExt, task_spec:Dict[str,str]):
+    def __init__(self, env:EnvironmentExt, task_name:str, instructions:str):
         self.env = env
-        self.task_name = task_spec['task-name']
-        self.instruction = task_spec['task-description']
+        self.task_name = task_name
+        self.instructions = instructions
 
 
 class RoboScriptGenAgent:
@@ -359,20 +390,31 @@ def main(cfg):
     #     dataset.n_episodes = 0
 
     runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=True)
-    print(f"obj_colors = {env.obj_colors}")
-    print(f"obj_classes = {env.obj_classes}")
-    if "fixed" in env.obj_ids and len(env.obj_ids["fixed"]) > 0:
-        print("FIXED objects:")
-        for obj_id in env.obj_ids['fixed']:
-            print(f"\t({obj_id}]: type={env.get_object_class(obj_id)} color={env.get_object_color(obj_id)}")
-        print()
-    if "rigid" in env.obj_ids and len(env.obj_ids["rigid"]) > 0:
-        print("Moveable rigid objects:")
-        for obj_id in env.obj_ids['rigid']:
-            print(f"\t({obj_id}]: type={env.get_object_class(obj_id)} color={env.get_object_color(obj_id)} ", end="")
+
+    # print(f"obj_colors = {env.obj_colors}")
+    # print(f"obj_classes = {env.obj_classes}")
+    all_objids = env.detect_objects()
+    moveable_objs = []
+    print("\nFIXED objects:")
+    for obj_id in all_objids:
+        if env.is_fixed(obj_id):
+            print(f"\t({obj_id}]: type={env._get_object_class_str(obj_id)} color={env.get_object_color_name(obj_id)} POSE: ", end="")
             print_pose(env.get_object_pose(obj_id))
             print()
-        print()
+        else:
+            moveable_objs.append(obj_id)
+    print("Moveable rigid objects:")
+    for obj_id in moveable_objs:
+        if env.is_rigid(obj_id):
+            print(f"\t({obj_id}]: type={env._get_object_class_str(obj_id)} color={env.get_object_color_name(obj_id)} POSE: ", end="")
+            print_pose(env.get_object_pose(obj_id))
+            print()
+    if 'deformable' in env.obj_ids and len(env.obj_ids['deformable']) > 0:
+        print("Deformable objects:")
+        for obj_id in all_objids:
+            if env.is_deformable(obj_id):
+                print(f"\t({obj_id}]: type={env._get_object_class_str(obj_id)} color={env.get_object_color_name(obj_id)}")
+    print()
     # print()
     runner.code_generation()  # runner.task_spec['task-name']
     #runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
