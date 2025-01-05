@@ -503,7 +503,7 @@ class Task():
         - replace (Boolean): whether each object can match with one unique target.   This is important if we have one target and multiple objects. If it's set to be false, then any object matching with the target will satisfy.
         - rotations (Boolean): whether the placement action has a rotation degree of freedom.
         - metric (`pose` or `zone`): `pose` or `zone` that the object needs to be transported to. Example: `pose`.
-        - params ([(zone_target, zone_size)])): has to be [(zone_target, zone_size)] if the metric is `zone` where obj_pts is a dictionary that maps object ID to points.
+        - params   params=None if metric='pose'. if metric='zone', then: ([(zone_target, zone_size)])).  has to be [(zone_target, zone_size)] if the metric is `zone`.  obj_pts is a dictionary that maps object ID to points. NOTE: obj_pts seems to be not included in goals and not used by most of the tasks (except for GoogleScannedObjects)
         - step_max_reward (float): the maximum reward of matching all the objects with all the target poses.
         """
         objs = self.zip_obj_ids(objs, symmetries)

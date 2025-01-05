@@ -25,7 +25,7 @@ class PlaceBlueBlocksInRedBowls(RobotScript):
         self.red_bowls = list(filter(lambda oid: env.is_object_type(oid, 'bowl') and env.is_object_color(oid, 'red'), scene_objects))
         self.current_target_index = -1
 
-    def get_target_obj_id(self):
+    def get_target_id(self):
         if not self.red_bowls:  # if there are no target bowls available
             self.current_target_index = -1
         else:
@@ -39,13 +39,13 @@ class PlaceBlueBlocksInRedBowls(RobotScript):
 
     def act(self, obs, info):
         ''' Each time this method is invoked, move one blue block into a red bowl.
-        In order to distribute them as evenly as possible, we cycle through the available bowls.
+        In order to distribute the blocks as evenly as possible, we cycle through the available bowls.
         '''
 
         if not self.blue_blocks:  # if there are no more blue blocks available, there's nothing to do.
             return None
-        block_id = self.blue_blocks.pop()  # select one blue block and remove it from the list of blocks that need to be moved
-        bowl_id = self.get_target_obj_id()
+        block_id = self.blue_blocks.pop()  # select one blue block, removing it from the list of items that need to be moved
+        bowl_id = self.get_target_id() # choose a destination
         if bowl_id is None:
             return None
         pick_pose = env.getPickPose(block_id)
