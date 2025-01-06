@@ -4,6 +4,7 @@ import os
 import hydra
 import numpy as np
 import openai
+import pybullet as p
 import random
 import traceback
 
@@ -11,7 +12,7 @@ import time
 from datetime import datetime
 from pprint import pprint
 
-from typing import Dict, List, Sequence, Union, Optional
+from typing import Dict, List, Sequence, Union, Optional, Any
 
 from pygments import highlight
 from pygments.lexers import PythonLexer
@@ -144,13 +145,17 @@ class EnvironmentExt(Environment):
     def get_pick_pose(self, obj_id):
         """ returns an estimate of the object's current 6 DoF pose,
           useful as the first argument for a Pick and Place action """
-        return None
-
+        obj_pose = p.getBasePositionAndOrientation(obj_id)  # ground truth pose
+        return obj_pose
+ 
     def get_place_pose(self, obj_id, target_id):
         """ returns a 6 DoF pose for the object identified by obj_id that is
           appropriate for placing it on or into the specified target object or zone
         """
-        return None
+        target_pose = p.getBasePositionAndOrientation(target_id)  # ground truth pose of target
+        obj_pose = p.getBasePositionAndOrientation(obj_id)  # ground truth pose
+        place_pose = (target_pose[0], obj_pose[1])    # xyz of target, but with unchanged rotation for obj
+        return place_pose
 
 class RobotScript:
     def __init__(self, env:EnvironmentExt, task_name:str, instructions:str):
@@ -222,10 +227,9 @@ class RoboScriptGenAgent:
             code_prompt_text = code_prompt_text.replace("TASK_STRING_TEMPLATE", str(task_spec))
 
         print(code_prompt_text)
-        return None
         res = generate_feedback(
                 code_prompt_text, temperature=0, interaction_txt=self.chat_log)
-        code, task_name = extract_code(res)
+        code, task_name = extract_code(res, baseclass_name="RobotScript")
         if len(task_name) == 0:
             print("empty task name:", task_name)
             return None, task_name
@@ -233,7 +237,7 @@ class RoboScriptGenAgent:
             print("Save code to:", self.model_output_dir, task_name + "_code_output")
             save_text(self.model_output_dir, task_name + "_code_output", code)
 
-        return code
+        return code, task_name
 
 
 class GenCodeRunner:
@@ -298,7 +302,7 @@ class GenCodeRunner:
         dataset = None
         return env
 
-    def run_one_episode(self, env, episode, seed, use_oracle=False):
+    def run_one_episode(self, env, episode, seed, use_oracle=False, robot_script=None):
         """ run the new task for one episode """
         add_to_txt(
                 self.chat_log, f"================= TRIAL: {self.curr_trials}", with_print=True)
@@ -306,7 +310,10 @@ class GenCodeRunner:
         random.seed(seed)
 
         print(f"{'Oracle ' if use_oracle else ''}demo: {self.n_episodes + 1}/{self.cfg['max_eps']} | Seed: {seed}")
-        expert = self.task.oracle(env)
+        if use_oracle:
+            expert = self.task.oracle(env)
+        else:
+            expert = robot_script
         env.set_task(self.task)
         obs = env.reset()
         print(f"***** Task: {type(self.task).__name__} mode={self.task.mode} lang_goal='{self.task.get_lang_goal()}'")
@@ -329,7 +336,7 @@ class GenCodeRunner:
                                                    # act has 2 fields: act['pose0'] and act['pose1']
         return episode_reward
 
-    def run_n_episodes(self, env, n_eps:int = 1, initial_seed=-2, use_oracle=False):
+    def run_n_episodes(self, env, n_eps:int = 1, initial_seed=-2, use_oracle=False, robot_script=None):
         num_run_eps = 0
         total_rews = 0
 
@@ -347,11 +354,12 @@ class GenCodeRunner:
         while num_run_eps < n_eps:
         # for epi_idx in range(cfg['n']):
             episode = []
+            episode_reward = 0
             current_seed += 2
             num_run_eps += 1
 
             try:
-                episode_reward = self.run_one_episode(env, episode, current_seed, use_oracle=use_oracle)
+                episode_reward = self.run_one_episode(env, episode, current_seed, use_oracle=use_oracle, robot_script=robot_script)
             except Exception as e:
                 to_print = highlight(f"{str(traceback.format_exc())}", PythonLexer(), TerminalFormatter())
                 print(to_print)
@@ -377,7 +385,9 @@ class GenCodeRunner:
             start_time = time.time()
             # self.agent.api_review(fask_spec['task-name'])
 
-            self.generated_code = self.agent.implement_task(self.task_spec)  # _task_name
+            code_, task_name_ = self.agent.implement_task(self.task_spec)  # _task_name
+            self.generated_code = code_
+            self.generated_task_name = task_name_
 
             if self.critic:
                 self.critic.error_review(self.generated_code)
@@ -449,6 +459,19 @@ def main(cfg):
     print()
     # print()
     runner.code_generation()  # runner.task_spec['task-name']
+    if runner.code_generation_pass:
+        print(f"Successfully generated code for task: {runner.generated_task_name}")
+        print("--------- GENERATED CODE:")
+        print(runner.generated_code)
+        print("-------------------------")
+        exec(runner.generated_code, globals(), locals())
+        #robot_script_ = None  # Should get redefined by the following exec()
+        exec(f"task_spec_ = {str(runner.task_spec)}\n"+
+             f"robot_script_ = {runner.generated_task_name}(env, task_spec_)\n"+
+             f"print('TASK_SPEC:', task_spec_)\n"+
+             f"print('robot_script:', robot_script_)\n"+
+              "runner.run_n_episodes(env, n_eps=5, initial_seed=seed, use_oracle=False, robot_script=robot_script_)",
+             globals(), locals())
     #runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
     print()
 if __name__ == '__main__':

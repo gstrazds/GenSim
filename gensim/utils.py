@@ -68,7 +68,7 @@ def get_task_import_str():
     "from cliport.tasks.task import Task\n" + \
     "from cliport.utils import utils\n"
 
-def extract_code(res):
+def extract_code(res, baseclass_name="Task"):
     """ parse code block """
     # Pattern to find string between ```
     pattern = r'```(.*?)```'
@@ -89,7 +89,7 @@ def extract_code(res):
 
     class_def = [line for line in code_lines if line.startswith('class')]
     task_name = class_def[0]
-    task_name = task_name[task_name.find("class "): task_name.rfind("(Task)")][6:]
+    task_name = task_name[task_name.find("class "): task_name.rfind(f"({baseclass_name})")][6:]
 
     print("task_name:", task_name)
     return get_task_import_str() + '\n'.join(code_lines).strip(), task_name
