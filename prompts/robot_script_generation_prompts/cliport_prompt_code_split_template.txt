@@ -1,4 +1,6 @@
-Now I will provide you some reference code and then you can write the code for the task:
+You are an AI in robot simulation code. I will provide you one or more example task descriptions with corresponding code implementations. Please first describe the task in natural languages and then write the implementation code for controlling a robot to perform the specified task. 
+
+Now I will provide you some reference code and then you can write the robot control code for the task:
 TASK_SPEC_TEMPLATE
 
 Examples of implementations for similar tasks:
@@ -7,22 +9,23 @@ for {'task-name': "packing-shapes", 'task-description': "pick up blue blocks and
 """
 import numpy as np
 from typing import Dict, List, Any
-from gensim.robocodegen import RobotScript, EnvironmentExt
-import pybullet as p
+from gensim.robocodegen import RobotScript, EnvironmentExt, PickAndPlaceAction
 
 
 class PlaceBlueBlocksInRedBowls(RobotScript):
     """pick up blue blocks and place them into red bowls."""
 
-    def __init__(self, env: EnvironmentExt, task_spec: Dict[str, str]):
+    def __init__(self, env: EnvironmentExt, task_spec):
         super().__init__(env, task_name: task_spec['task-name'], instructions: task_spec['task-description'])
-        scene_objects = env.detect_objects() # obtain a list of all the visible objects
+        self.env_reset(env)
 
+    def env_reset(self, env):
+        super().env_reset(env)
         # a list of blocks that are blue
-        self.blue_blocks = list(filter(lambda oid: env.is_object_type(oid, 'block') and env.is_object_color(oid, 'blue'), scene_objects))
+        self.blue_blocks = list(filter(lambda oid: env.is_object_type(oid, 'block') and env.is_object_color(oid, 'blue'), self.scene_objects))
 
         # a list of bowls that are red
-        self.red_bowls = list(filter(lambda oid: env.is_object_type(oid, 'bowl') and env.is_object_color(oid, 'red'), scene_objects))
+        self.red_bowls = list(filter(lambda oid: env.is_object_type(oid, 'bowl') and env.is_object_color(oid, 'red'), self.scene_objects))
         self.current_target_index = -1
 
     def get_target_id(self):
@@ -48,10 +51,10 @@ class PlaceBlueBlocksInRedBowls(RobotScript):
         bowl_id = self.get_target_id() # choose a destination
         if bowl_id is None:
             return None
-        pick_pose = env.getPickPose(block_id)
-        place_pose = env.getPlacePose(block_id, bowl_id)  # a pose that's appropriate for placing the first object onto or in the target object
+        pick_pose = self.env.get_pick_pose(block_id)
+        place_pose = self.env.get_place_pose(block_id, bowl_id)  # a pose that's appropriate for placing the first object onto or in the target object
 
-        return PickAndPlaceAction(pick_pose, place_pose)  # arguments for performing a pick and place action in the environment
+        return PickAndPlaceAction(pick_pose, place_pose, block_id)  # arguments for performing a pick and place action in the environment
 
 """
 

@@ -22,7 +22,7 @@ max_eps: 3
 prompt_data_path: prompts/data/
 save_memory: False # save the assets, task code, task descriptions generated offline
 load_memory: True # load the assets, task code, task descriptions generated offline
-# use_template: False # use template when constructing prompts, better for scaling
+# use_template: False # use RAG: select a subset of code examples when constructing prompts, better for scaling
 
 # dataset:
 #   type: 'single' # 'single' or 'multi'

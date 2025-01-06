@@ -162,6 +162,11 @@ class RobotScript:
         self.env = env
         self.task_name = task_name
         self.instructions = instructions
+        self.env_reset(env)
+
+    def env_reset(self, env):
+        print(" **** RobotScript.env_reset() **** ")
+        self.scene_objects = env.detect_objects() # obtain a list of all the visible objects
 
 
 class RoboScriptGenAgent:
@@ -316,6 +321,9 @@ class GenCodeRunner:
             expert = robot_script
         env.set_task(self.task)
         obs = env.reset()
+        if not use_oracle:
+            robot_script.env_reset(env)
+
         print(f"***** Task: {type(self.task).__name__} mode={self.task.mode} lang_goal='{self.task.get_lang_goal()}'")
 
         info = env.info
@@ -470,7 +478,7 @@ def main(cfg):
              f"robot_script_ = {runner.generated_task_name}(env, task_spec_)\n"+
              f"print('TASK_SPEC:', task_spec_)\n"+
              f"print('robot_script:', robot_script_)\n"+
-              "runner.run_n_episodes(env, n_eps=5, initial_seed=seed, use_oracle=False, robot_script=robot_script_)",
+              "runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False, robot_script=robot_script_)",
              globals(), locals())
     #runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
     print()
