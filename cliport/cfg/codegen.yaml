@@ -24,6 +24,8 @@ save_memory: False # save the assets, task code, task descriptions generated off
 load_memory: True # load the assets, task code, task descriptions generated offline
 # use_template: False # use RAG: select a subset of code examples when constructing prompts, better for scaling
 
+demo: False  # if true, use a previously generated RobotScript
+
 # dataset:
 #   type: 'single' # 'single' or 'multi'
 #   images: True

@@ -7,8 +7,12 @@ import openai
 import pybullet as p
 import random
 import traceback
+import pathlib
+import importlib
+import camel_converter
 
 import time
+import gensim.robot_scripts
 from datetime import datetime
 from pprint import pprint
 
@@ -431,6 +435,7 @@ def main(cfg):
     critic = None #Critic(cfg, memory)
     runner = GenCodeRunner(cfg, agent, critic, memory)
 
+    print("cfg.task =", cfg.task)
     env = runner.setup_env(cfg['task'])
     # Train seeds are even and val/test seeds are odd. Test seeds are offset by 10000
     seed = -1 #dataset.max_seed
@@ -465,22 +470,40 @@ def main(cfg):
             if env.is_deformable(obj_id):
                 print(f"\t({obj_id}]: type={env._get_object_class_str(obj_id)} color={env.get_object_color_name(obj_id)}")
     print()
-    # print()
-    runner.code_generation()  # runner.task_spec['task-name']
-    if runner.code_generation_pass:
-        print(f"Successfully generated code for task: {runner.generated_task_name}")
-        print("--------- GENERATED CODE:")
-        print(runner.generated_code)
-        print("-------------------------")
-        exec(runner.generated_code, globals(), locals())
-        #robot_script_ = None  # Should get redefined by the following exec()
-        exec(f"task_spec_ = {str(runner.task_spec)}\n"+
-             f"robot_script_ = {runner.generated_task_name}(env, task_spec_)\n"+
-             f"print('TASK_SPEC:', task_spec_)\n"+
-             f"print('robot_script:', robot_script_)\n"+
-              "runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False, robot_script=robot_script_)",
-             globals(), locals())
-    #runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
-    print()
+    if cfg.demo:
+        code_dir = pathlib.Path(cfg.root_dir) / 'gensim' / 'robot_scripts'
+        # print(code_dir)
+        assert code_dir.exists() and code_dir.is_dir(), f"Expected directory for genrated robot scripts: {code_dir}"
+        _filename = cfg.task.replace('-', '_')
+        script_file = code_dir / (_filename  + '.py')
+        if not script_file.exists():
+            print(f"Expected to find an implementation for {cfg.task} in {script_file}" )
+        else:
+            print(f"Loading implementation for {cfg.task} from {script_file}" )
+            module_ = importlib.import_module("gensim.robot_scripts."+_filename)
+            print(module_)
+            classname = camel_converter.to_camel(_filename)
+            classname = classname[0].upper() + classname[1:]
+            print("ClassName:", classname)
+            class_ = getattr(module_, classname)  # "ColorCoordinatedCylinderInBox")
+            robot_script_ = class_(env, runner.task_spec)
+            runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False, robot_script=robot_script_)
+    else:
+        runner.code_generation()  # runner.task_spec['task-name']
+        if runner.code_generation_pass:
+            print(f"Successfully generated code for task: {runner.generated_task_name}")
+            print("--------- GENERATED CODE:")
+            print(runner.generated_code)
+            print("-------------------------")
+            exec(runner.generated_code, globals(), locals())
+            #robot_script_ = None  # Should get redefined by the following exec()
+            exec(f"task_spec_ = {str(runner.task_spec)}\n"+
+                f"robot_script_ = {runner.generated_task_name}(env, task_spec_)\n"+
+                f"print('TASK_SPEC:', task_spec_)\n"+
+                f"print('robot_script:', robot_script_)\n"+
+                "runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False, robot_script=robot_script_)",
+                globals(), locals())
+        #runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=False)
+        print()
 if __name__ == '__main__':
     main()
