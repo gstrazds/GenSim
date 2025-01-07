@@ -101,12 +101,12 @@ class EnvironmentExt(Environment):
         #     color = input_color
         if color is not None:
             self.obj_colors[obj_id] = color
-            # print(f"obj_colors[{obj_id}] = {color}")
+            print(f"obj_colors[{obj_id}] = {color}")
         return obj_id
     
     def set_color(self, obj_id, color):
         self.obj_colors[obj_id] = color
-        # print(f"set_color({obj_id}) = {color}")
+        print(f"set_color({obj_id}) = {color}")
         return super().set_color(obj_id, color)
 
     def _get_object_class_str(self, obj_id) -> str:

@@ -27,8 +27,10 @@ class StackColorCoordinatedBlocks(RobotScript):
         self.stack_two_blocks = []
         # Find all blocks and sort them into the two stacks based on color
         for block_id in self.scene_objects:
-            if env.is_object_type(block_id, 'block'):
-                color = env.get_object_color(block_id)
+            if env.is_object_type(block_id, 'block') or \
+               env.is_object_type(block_id, 'box'):
+                color = env.get_object_color_name(block_id)
+                print("BLOCK ID:", block_id, "COLOR:", color)
                 if color in self.stack_one_order:
                     self.stack_one_blocks.append((self.stack_one_order.index(color), block_id))
                 elif color in self.stack_two_order:
@@ -38,6 +40,7 @@ class StackColorCoordinatedBlocks(RobotScript):
         self.stack_two_blocks.sort()
         # Get the pallet ID to place the stacks on
         self.pallet_id = next(filter(lambda oid: env.is_object_type(oid, 'pallet'), self.scene_objects), None)
+        print("PALLET ID=", self.pallet_id)
 
     def act(self, obs, info):
         ''' Each time this method is invoked, move one block to the correct position on the pallet to form the stacks.
@@ -45,12 +48,14 @@ class StackColorCoordinatedBlocks(RobotScript):
         # Check if there are blocks left to stack for stack one
         if self.stack_one_blocks:
             color_index, block_id = self.stack_one_blocks.pop(0)  # Get the next block to place
-            place_pose = self.env.get_place_pose(block_id, self.pallet_id, stack_index=0, level=color_index)
+            place_pose = self.env.get_place_pose(block_id, self.pallet_id) #, stack_index=0, level=color_index)
         # If stack one is complete, move on to stack two
         elif self.stack_two_blocks:
             color_index, block_id = self.stack_two_blocks.pop(0)  # Get the next block to place
-            place_pose = self.env.get_place_pose(block_id, self.pallet_id, stack_index=1, level=color_index)
+            place_pose = self.env.get_place_pose(block_id, self.pallet_id) #, stack_index=1, level=color_index)
+            print(color_index, block_id, place_pose)
         else:
+            print("NO BLOCKS AVAILABLE")
             return None  # All blocks have been placed, the task is complete
 
         pick_pose = self.env.get_pick_pose(block_id)

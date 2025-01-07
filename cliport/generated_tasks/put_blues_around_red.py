@@ -19,7 +19,7 @@ class PlaceBluesAroundRed(Task):
         red_block_size = (0.04, 0.04, 0.04)
         red_block_urdf = 'block/block_for_anchors.urdf'
         red_block_pose = self.get_random_pose(env, red_block_size)
-        red_block_id = env.add_object(red_block_urdf, red_block_pose, 'fixed')
+        red_block_id = env.add_object(red_block_urdf, red_block_pose, 'fixed', color=utils.COLORS['red'])
 
         # Add blue blocks.
         blue_blocks = []
