@@ -16,6 +16,7 @@ import pybullet as p
 import tempfile
 import random
 import sys
+import math
 
 PLACE_STEP = 0.0003
 PLACE_DELTA_THRESHOLD = 0.005
@@ -596,11 +597,11 @@ class Environment(gym.Env):
     def get_object_size(self, obj_id):
         """ approximate object's size using AABB """
         aabb_min, aabb_max = p.getAABB(obj_id)
-
+        print(f"get_object_size({obj_id} -> {aabb_min} {aabb_max}")
         size_x = aabb_max[0] - aabb_min[0]
         size_y = aabb_max[1] - aabb_min[1]
         size_z = aabb_max[2] - aabb_min[2]
-        return size_z * size_y * size_x
+        return math.sqrt(size_z**2 + size_y**2 + size_x**2)
 
 
 

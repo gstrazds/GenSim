@@ -34,6 +34,7 @@ class PutBluesAroundRed(RobotScript):
         if not self.blue_blocks:  # if there are no more blue blocks available, there's nothing to do.
             print("NO BLUE BLOCKS")
             return None
+        num_blue_blocks = len(self.blue_blocks)
         if not self.red_block:  # if there is no red block, we cannot complete the task.
             print("NO RED BLOCKS")
             return None
@@ -42,11 +43,12 @@ class PutBluesAroundRed(RobotScript):
 
         # Calculate the placement position around the red block
         red_block_pose = self.env.get_object_pose(self.red_block)
-        angle = 2 * np.pi * (self.placement_index / len(self.blue_blocks))  # distribute blocks evenly in a circle
+        angle = 2 * np.pi * (self.placement_index / num_blue_blocks)  # distribute blocks evenly in a circle
         offset = np.array([np.cos(angle), np.sin(angle), 0]) * self.env.get_object_size(self.red_block)
+        print(f"OFFSET = {offset}  RED_BLOCK_SIZE={self.env.get_object_size(self.red_block)}")
         #place_pose = red_block_pose + offset
         place_pose = (red_block_pose[0] + offset, red_block_pose[1])
-
+        print(f"place_pose = {place_pose}")
         self.placement_index += 1  # increment the placement index for the next block
 
         pick_pose = self.env.get_pick_pose(block_id)
