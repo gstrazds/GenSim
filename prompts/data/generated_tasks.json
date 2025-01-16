@@ -1049,6 +1049,14 @@
             "line/line-template.urdf"
         ]
     },
+    "align-bottles-on-line": {
+        "task-name": "align-bottles-on-line",
+        "task-description": "There are four colored bottles (red, blue, green, yellow) and four lines of matching colors on the tabletop. The task is to pick up each bottle and align it along the line of the same color. The alignment should follow a specific sequence - red first, then blue, green, and finally yellow.",
+        "assets-used": [
+            "bottle/bottle.urdf",
+            "line/line-template.urdf"
+        ]
+    },
     "palette-color-match": {
         "task-name": "palette-color-match",
         "task-description": "There are four colored balls (red, blue, yellow, green) and one pallet with four slots of matching colors. The task is to pick up each ball and place it into the corresponding colored slot in the pallet, the placement should follow a specific sequence - blue first, then yellow, green, and finally red.",
