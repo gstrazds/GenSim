@@ -196,7 +196,7 @@ class Task():
 
             place_pose = (np.asarray(place_pose[0]), np.asarray(place_pose[1]))
 
-            return {'pose0': pick_pose, 'pose1': place_pose}
+            return {'pose0': pick_pose, 'pose1': pick_pose} #place_pose}
 
         return OracleAgent(act)
 

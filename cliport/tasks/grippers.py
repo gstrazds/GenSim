@@ -157,7 +157,10 @@ class Suction(Gripper):
         if not self.activated:
             points = p.getContactPoints(bodyA=self.body, linkIndexA=0)
             # print(points)
+            if not points:
+                print("FAILED TO GRIP {}")
             if points:
+                print("SuctionGripper.activate:", points)
 
                 # Handle contact between suction with a rigid object.
                 for point in points:

@@ -158,7 +158,7 @@ class EnvironmentExt(Environment):
         """
         target_pose = p.getBasePositionAndOrientation(target_id)  # ground truth pose of target
         obj_pose = p.getBasePositionAndOrientation(obj_id)  # ground truth pose
-        place_pose = (target_pose[0], obj_pose[1])    # xyz of target, but with unchanged rotation for obj
+        place_pose = (target_pose[0], target_pose[1])    # xyz of target, but with unchanged rotation for obj
         return place_pose
 
 class RobotScript:

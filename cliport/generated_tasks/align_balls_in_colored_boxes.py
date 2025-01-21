@@ -28,7 +28,7 @@ class AlignBallsInColoredBoxes(Task):
         colors = ['red', 'blue', 'green', 'yellow']
 
         # Add boxes.
-        box_size = (0.12, 0.12, 0.12)
+        box_size = (0.22, 0.22, 0.22)
         box_urdf = 'box/box-template.urdf'
         box_poses = []
         boxes = []

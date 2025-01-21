@@ -21,7 +21,7 @@ import math
 PLACE_STEP = 0.0003
 PLACE_DELTA_THRESHOLD = 0.005
 
-UR5_URDF_PATH = 'ur5/ur5.urdf'
+UR5_URDF_PATH = 'ur5/ur5.urdf' #'ur5/ur5_robotiq85.urdf'
 UR5_WORKSPACE_URDF_PATH = 'ur5/workspace.urdf'
 PLANE_URDF_PATH = 'plane/plane.urdf'
 
@@ -275,7 +275,7 @@ class Environment(gym.Env):
         self.joints = [j[0] for j in joints if j[2] == p.JOINT_REVOLUTE]
 
         # Move robot to home joint configuration.
-        for i in range(len(self.joints)):
+        for i in range(len(self.homej)): #self.joints)):
             p.resetJointState(self.ur5, self.joints[i], self.homej[i])
 
         # Reset end effector.
