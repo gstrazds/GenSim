@@ -196,7 +196,7 @@ class Task():
 
             place_pose = (np.asarray(place_pose[0]), np.asarray(place_pose[1]))
 
-            return {'pose0': pick_pose, 'pose1': pick_pose} #place_pose}
+            return {'pose0': pick_pose, 'pose1': place_pose}
 
         return OracleAgent(act)
 
@@ -432,6 +432,7 @@ class Task():
                 for to_replace_color in  code_string:
                     fdata = fdata.replace(f'{to_replace_color}', " ".join([str(x) for x in list(replace[field]) + [1]]))
             
+        print(f"@@@@ fill_template({template}, {replace}) => {fdata}")
         alphabet = string.ascii_lowercase + string.digits
         rname = ''.join(random.choices(alphabet, k=16))
         tmpdir = tempfile.gettempdir()

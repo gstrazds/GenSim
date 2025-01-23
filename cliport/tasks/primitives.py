@@ -55,12 +55,12 @@ class PickPlace():
             preplace_pose = utils.multiply(place_pose, preplace_to_place)
             postplace_pose = utils.multiply(place_pose, postplace_to_place)
             targ_pose = preplace_pose
-            # while not ee.detect_contact():
-            #     targ_pose = utils.multiply(targ_pose, delta)
-            #     timeout |= movep(targ_pose, self.speed)
-            #     if timeout:
-            #         return True
-            # ee.release()
+            while not ee.detect_contact():
+                targ_pose = utils.multiply(targ_pose, delta)
+                timeout |= movep(targ_pose, self.speed)
+                if timeout:
+                    return True
+            ee.release()
             timeout |= movep(postplace_pose)
 
         # Move to prepick pose if pick is not successful.

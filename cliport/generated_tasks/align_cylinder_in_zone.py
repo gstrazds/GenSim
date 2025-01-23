@@ -26,7 +26,7 @@ class AlignCylinderInZone(Task):
         # Add zones.
         zone_size = (0.12, 0.12, 0)
         zone_urdf = 'zone/zone.urdf'
-        zone_colors = ['green', 'yellow']
+        zone_colors = ['green', 'yellow', 'red', 'blue']
         zone_poses = []
         for color in zone_colors:
             zone_pose = self.get_random_pose(env, zone_size)
@@ -34,12 +34,16 @@ class AlignCylinderInZone(Task):
             zone_poses.append(zone_pose)
 
         # Add cylinders.
-        cylinder_size = (0.04, 0.04, 0.04)
-        cylinder_urdf = 'cylinder/cylinder-template.urdf'
+        cylinder_size = (0.10, 0.04, 0.04)
+        cylinder_urdf = 'cylinder/cylinder.urdf'
         cylinder_colors = ['red', 'blue']
         cylinders = []
+        rot = utils.eulerXYZ_to_quatXYZW((0, 0*np.pi/2, 0))  # rotate the cylinder to horizontal
+ 
         for color in cylinder_colors:
             cylinder_pose = self.get_random_pose(env, cylinder_size)
+            cylinder_pose[0][2] += 0.02
+            cylinder_pose = (cylinder_pose[0], rot)
             cylinder_id = env.add_object(cylinder_urdf, cylinder_pose, color=utils.COLORS[color])
             cylinders.append(cylinder_id)
 

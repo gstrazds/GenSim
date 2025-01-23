@@ -299,6 +299,7 @@ class Environment(gym.Env):
         Returns:
           (obs, reward, done, info) tuple containing MDP step data.
         """
+        _TIMEOUT = 5
         if action is not None:
             timeout = self.task.primitive(self.movej, self.movep, self.ee, action['pose0'], action['pose1'])
 
@@ -316,7 +317,7 @@ class Environment(gym.Env):
         # Step simulator asynchronously until objects settle.
         while not self.is_static:
             self.step_simulation()
-            if time.time() - start_time > 5: # timeout
+            if time.time() - start_time > _TIMEOUT: # timeout
                 break
 
         # Get task rewards.
