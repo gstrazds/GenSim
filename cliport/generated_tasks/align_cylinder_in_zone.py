@@ -42,7 +42,7 @@ class AlignCylinderInZone(Task):
  
         for color in cylinder_colors:
             cylinder_pose = self.get_random_pose(env, cylinder_size)
-            cylinder_pose[0][2] += 0.02
+            cylinder_pose[0][2] += 0.03
             cylinder_pose = (cylinder_pose[0], rot)
             cylinder_id = env.add_object(cylinder_urdf, cylinder_pose, color=utils.COLORS[color])
             cylinders.append(cylinder_id)
