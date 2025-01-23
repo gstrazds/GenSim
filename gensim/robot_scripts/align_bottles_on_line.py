@@ -54,4 +54,4 @@ class AlignBottlesOnLine(RobotScript):
         place_pose = self.env.get_place_pose(cylinder_id, box_id)
 
         # Perform the pick and place action
-        return PickAndPlaceAction(pick_pose, pick_pose, cylinder_id)
+        return PickAndPlaceAction(pick_pose, place_pose, cylinder_id)

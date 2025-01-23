@@ -39,6 +39,8 @@ class AlignBlocksOnLine(Task):
         blocks = []
         for color in self.colors:
             block_pose = self.get_random_pose(env, block_size)
+            block_pose[0][2] = -0.065
+
             block_id = env.add_object(block_urdf, block_pose, color=utils.COLORS[color])
             blocks.append(block_id)
 

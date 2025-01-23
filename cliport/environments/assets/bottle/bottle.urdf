@@ -10,12 +10,12 @@
             <inertia_scaling value="3.0"/>
         </contact>
         <inertial>
-            <origin rpy="0 0 0" xyz="0 0.0 0"/>
+            <origin rpy="0 0 0" xyz="0.0 0 0.067"/>
             <mass value="0.1"/>
-            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+            <inertia ixx="0.0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
         </inertial>
         <visual>
-            <origin rpy="0 0 0" xyz="0 0 -0.067"/>
+            <origin rpy="0 0 0" xyz="0 0 0.067"/>
             <geometry>
                 <mesh filename="madara_bottle_simplified.stl" scale="1 1 1"/> 
             </geometry>
@@ -24,7 +24,7 @@
             </material>
         </visual>
         <collision>
-            <origin rpy="0 0 0" xyz="0 0 -0.067"/>
+            <origin rpy="0 0 0" xyz="0 0 0.067"/>
             <geometry>
                 <mesh filename="madara_bottle_simplified.stl" scale="1.0 1.0 1.0"/>  
             </geometry>
