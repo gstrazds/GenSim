@@ -153,5 +153,7 @@
     "color_coordinated_block_insertion_in_pallets.py",
     "color_matching_block_in_pallet.py",
     "color_corresponding_ball_block_stack.py",
-    "color_matching_blocks_to_corner_and_zone.py"
+    "color_matching_blocks_to_corner_and_zone.py",
+    "move_bottles_into_blue_zone.py",
+    "color_coordinated_cylinder_on_block.py"
 ]

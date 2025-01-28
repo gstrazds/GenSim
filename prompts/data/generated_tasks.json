@@ -1252,5 +1252,23 @@
             "zone/zone.urdf",
             "block/block.urdf"
         ]
+    },
+    "move-bottles-into-blue-zone": {
+        "task-name": "move-bottles-into-blue-zone",
+        "task-description": "The task requires the robot to pick up three bottles of different colors (red, green, and yellow), navigate around a small blue block acting as an obstacle, and place each bottle neatly within a designated blue zone on the table without knocking over the block.",
+        "assets-used": [
+            "bottle/bottle.urdf",
+            "zone/zone.urdf",
+            "zone/zone_large.urdf",
+            "block/block.urdf"
+        ]
+    },
+    "color-coordinated-cylinder-on-block": {
+        "task-name": "color-coordinated-cylinder-on-block",
+        "task-description": "There are four different colored blocks (red, blue, green, yellow) each having a slot on the top, and four corresponding colored cylinders on the tabletop. The task is to pick up each colored cylinder and place it onto the block of the same color from top while the blocks should remain at their original positions. The cylinders must be placed in a specific sequence - red first, then blue, then green, and finally yellow.",
+        "assets-used": [
+            "box/box-template.urdf",
+            "cylinder/rod.urdf"
+        ]
     }
 }

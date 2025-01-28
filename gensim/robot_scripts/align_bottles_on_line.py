@@ -11,7 +11,7 @@ from typing import Dict, List, Any
 from gensim.robocodegen import RobotScript, EnvironmentExt, PickAndPlaceAction
 
 class AlignBottlesOnLine(RobotScript):
-    """There are four colored bottles (red, blue, green, yellow) and four lines of matching colors on the tabletop. The task is to pick up each bottle and align it along the line of the same color. The alignment should follow a specific sequence - red first, then blue, green, and finally yellow."""
+    """Align bottles on lines of matching colors in a specific sequence."""
 
     def __init__(self, env: EnvironmentExt, task_spec):
         super().__init__(env, task_name=task_spec['task-name'], instructions=task_spec['task-description'])
@@ -19,39 +19,48 @@ class AlignBottlesOnLine(RobotScript):
 
     def env_reset(self, env):
         super().env_reset(env)
-        # Initialize the sequence in which cylinders will be placed
+        # Create a dictionary to hold the bottles and lines of each color
+        self.bottles = {}
+        self.lines = {}
+        # Define the sequence in which the bottles should be aligned
         self.sequence = ['red', 'blue', 'green', 'yellow']
-        # Find all cylinders and boxes in the environment
-        self.cylinders = {color: None for color in self.sequence}
-        self.boxes = {color: None for color in self.sequence}
-        for oid in self.scene_objects:
-            for color in self.sequence:
-                if env.is_object_type(oid, 'bottle') and env.is_object_color(oid, color):
-                    self.cylinders[color] = oid
-                elif env.is_object_type(oid, 'line') and env.is_object_color(oid, color):
-                    self.boxes[color] = oid
-        print("lines:", self.boxes)
-        print("bottles:", self.cylinders)
+        # Populate the dictionary with the bottles and lines
+        for color in self.sequence:
+            self.bottles[color] = list(filter(lambda oid: env.is_object_type(oid, 'bottle') and env.is_object_color(oid, color), self.scene_objects))
+            self.lines[color] = list(filter(lambda oid: env.is_object_type(oid, 'line') and env.is_object_color(oid, color), self.scene_objects))
+        # Initialize the current color index to start with the first color in the sequence
+        self.current_color_index = 0
 
-    def act(self, obs, info):
-        ''' Each time this method is invoked, move the next bottle in the sequence into the matching colored box.
+    def get_next_bottle_and_line(self):
+        # Get the current color based on the sequence
+        current_color = self.sequence[self.current_color_index]
+        # If there are no bottles or lines of the current color, move to the next color
+        if not self.bottles[current_color] or not self.lines[current_color]:
+            self.current_color_index += 1
+            return None, None
+        # Get the bottle and line of the current color
+        bottle_id = self.bottles[current_color].pop()
+        line_id = self.lines[current_color][0]  # Assuming there's only one line per color
+        return bottle_id, line_id
+
+    def act(self, obs: str, info: Dict[str, Any]):
+        ''' Each time this method is invoked, align one bottle on its matching color line.
+        The bottles are aligned in the sequence defined by the 'sequence' attribute.
         '''
-        # Check if the sequence is empty, if so, the task is complete
-        if not self.sequence:
+
+        # If we have gone through all colors, there's nothing to do
+        if self.current_color_index >= len(self.sequence):
             return None
 
-        # Get the next color in the sequence
-        color = self.sequence.pop(0)
-        cylinder_id = self.cylinders[color]
-        box_id = self.boxes[color]
+        # Get the next bottle and line to align
+        bottle_id, line_id = self.get_next_bottle_and_line()
+        # If there's no bottle or line, it means we need to move to the next color
+        if bottle_id is None or line_id is None:
+            return self.act(obs, info)  # Recursively call act to handle the next color
 
-        # If either the cylinder or the box is missing, the task cannot be completed
-        if cylinder_id is None or box_id is None:
-            return None
+        # Get the pick and place poses for the bottle and line
+        pick_pose = self.env.get_pick_pose(bottle_id)
+        place_pose = self.env.get_place_pose(bottle_id, line_id)
 
-        # Get the pick and place poses for the cylinder and box
-        pick_pose = self.env.get_pick_pose(cylinder_id)
-        place_pose = self.env.get_place_pose(cylinder_id, box_id)
-
-        # Perform the pick and place action
-        return PickAndPlaceAction(pick_pose, place_pose, cylinder_id)
+        # Return the action to pick up the bottle and place it on the line
+        return PickAndPlaceAction(pick_pose, place_pose, bottle_id)

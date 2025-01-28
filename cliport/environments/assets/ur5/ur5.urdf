@@ -95,7 +95,7 @@
       <geometry>
         <mesh filename="visual/forearm.stl"/>
       </geometry>
-      <material name="DarkGrey"/>
+      <material name="LightGrey"/>
     </visual>
     <!-- <collision>
       <geometry>

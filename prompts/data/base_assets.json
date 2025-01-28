@@ -16,6 +16,7 @@
     ],
     "zone": [
         "zone/zone.urdf",
+        "zone/zone_large.urdf",
         "zone/zone.obj"
     ],
     "block": [
@@ -28,7 +29,9 @@
         "pallet/pallet.obj"
     ],
     "cylinder": [
-        "cylinder/cylinder-template.urdf"
+        "cylinder/cylinder-template.urdf",
+        "cylinder/cylinder.urdf",
+        "cylinder/rod.urdf"
     ],
     "container": [
         "container/container-template.urdf"
@@ -48,5 +51,9 @@
     "insertion": [
         "insertion/ell.urdf",
         "insertion/fixture.urdf"
+    ],
+    "bottle": [
+        "bottle/bottle.urdf",
+        "bottle/bottle.urdf"
     ]
 }

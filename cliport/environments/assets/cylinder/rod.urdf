@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<robot name="rod.urdf">
+<robot name="cylinder.urdf">
   <link name="baseLink">
     <contact>
       <lateral_friction value="1.0"/>

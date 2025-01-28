@@ -7,10 +7,11 @@ from cliport.tasks.grippers import Spatula
 from cliport.tasks.task import Task
 from cliport.utils import utils
 import numpy as np
+import random
 from cliport.tasks.task import Task
 from cliport.utils import utils
 
-class AlignBlocksOnLine(Task):
+class AlignBottlesOnLine(Task):
     """Align colored blocks on the line of the same color in a specific sequence."""
 
     def __init__(self):
@@ -28,8 +29,12 @@ class AlignBlocksOnLine(Task):
         line_size = (0.3, 0.01, 0.01)
         line_urdf = 'line/line-template.urdf'
         line_poses = []
-        for color in self.colors:
-            line_pose = self.get_random_pose(env, line_size)
+        delta_y_pos = random.randint(0,4) / 100.0
+        for i, color in enumerate(self.colors):
+            line_pose_rand = self.get_random_pose(env, line_size)
+            line_pose_y = line_poses[0][0][1] if line_poses else line_pose_rand[0][1]
+ 
+            line_pose = ((0.30+i*(0.10+delta_y_pos), line_pose_y, line_pose_rand[0][2]), utils.eulerXYZ_to_quatXYZW((0,0,0)))
             env.add_object(line_urdf, line_pose, category='fixed', color=utils.COLORS[color])
             line_poses.append(line_pose)
 

@@ -10,8 +10,8 @@ import numpy as np
 from typing import Dict, List, Any
 from gensim.robocodegen import RobotScript, EnvironmentExt, PickAndPlaceAction
 
-class ColorCoordinatedCylinderInBox(RobotScript):
-    """Place colored cylinders into the matching colored boxes in a specific sequence."""
+class AlignBottlesOnLineGVS(RobotScript):
+    """There are four colored bottles (red, blue, green, yellow) and four lines of matching colors on the tabletop. The task is to pick up each bottle and align it along the line of the same color. The alignment should follow a specific sequence - red first, then blue, green, and finally yellow."""
 
     def __init__(self, env: EnvironmentExt, task_spec):
         super().__init__(env, task_name=task_spec['task-name'], instructions=task_spec['task-description'])
@@ -26,13 +26,15 @@ class ColorCoordinatedCylinderInBox(RobotScript):
         self.boxes = {color: None for color in self.sequence}
         for oid in self.scene_objects:
             for color in self.sequence:
-                if env.is_object_type(oid, 'cylinder') and env.is_object_color(oid, color):
+                if env.is_object_type(oid, 'bottle') and env.is_object_color(oid, color):
                     self.cylinders[color] = oid
-                elif env.is_object_type(oid, 'box') and env.is_object_color(oid, color):
+                elif env.is_object_type(oid, 'line') and env.is_object_color(oid, color):
                     self.boxes[color] = oid
+        print("lines:", self.boxes)
+        print("bottles:", self.cylinders)
 
     def act(self, obs, info):
-        ''' Each time this method is invoked, move the next cylinder in the sequence into the matching colored box.
+        ''' Each time this method is invoked, move the next bottle in the sequence into the matching colored box.
         '''
         # Check if the sequence is empty, if so, the task is complete
         if not self.sequence:
