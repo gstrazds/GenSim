@@ -434,8 +434,9 @@ def main(cfg):
     agent = RoboScriptGenAgent(cfg, memory)
     critic = None #Critic(cfg, memory)
     runner = GenCodeRunner(cfg, agent, critic, memory)
+    n_times = cfg.n_times
 
-    print("cfg.task =", cfg.task)
+    print(f"cfg.task = {cfg.task} n_times: {n_times}", )
     env = runner.setup_env(cfg['task'])
     # Train seeds are even and val/test seeds are odd. Test seeds are offset by 10000
     seed = -1 #dataset.max_seed
@@ -444,7 +445,8 @@ def main(cfg):
     # if 'regenerate_data' in cfg:
     #     dataset.n_episodes = 0
 
-    runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=True)
+    for i in range(n_times):
+        runner.run_n_episodes(env, n_eps=max_eps, initial_seed=seed, use_oracle=True)
 
     # print(f"obj_colors = {env.obj_colors}")
     # print(f"obj_classes = {env.obj_classes}")
