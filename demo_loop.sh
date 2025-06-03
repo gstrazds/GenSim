@@ -6,9 +6,9 @@ python gensim/robocodegen.py task=place-red-in-green max_eps=8 n_times=2
 
 python gensim/robocodegen.py task=color-coordinated-cylinder-on-block max_eps=5 n_times=2
 
-python gensim/robocodegen.py task=assembling-kits max_eps=1 seed=5
-
 python gensim/robocodegen.py task=align-bottles-on-line max_eps=3 n_times=1
+
+python gensim/robocodegen.py task=assembling-kits max_eps=1 seed=5
 
 python gensim/robocodegen.py task=place-red-in-green max_eps=2 seed=8
 
