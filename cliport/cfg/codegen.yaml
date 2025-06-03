@@ -18,6 +18,7 @@ save_data: False  # write episodes to disk
 
 max_eps: 3
 n_times: 1
+seed: -2
 
 # Save and Load Memory
 prompt_data_path: prompts/data/

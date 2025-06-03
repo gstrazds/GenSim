@@ -426,7 +426,7 @@ def main(cfg):
 
     model_time = datetime.now().strftime("%d_%m_%Y_%H:%M:%S")
     cfg['model_output_dir'] = os.path.join(cfg['output_folder'], cfg['prompt_folder'] + "_" + model_time)
-    if 'seed' in cfg:
+    if 'seed' in cfg and cfg.seed >= 0:
         cfg['model_output_dir'] = cfg['model_output_dir'] + f"_{cfg['seed']}"
 
     set_gpt_model(cfg['gpt_model'])
@@ -439,7 +439,10 @@ def main(cfg):
     print(f"cfg.task = {cfg.task} n_times: {n_times}", )
     env = runner.setup_env(cfg['task'])
     # Train seeds are even and val/test seeds are odd. Test seeds are offset by 10000
-    seed = -1 #dataset.max_seed
+    if 'seed' in cfg:
+        seed = cfg.seed
+    else:
+        seed = -1 #dataset.max_seed
     max_eps = cfg['max_eps'] # 3 * cfg['n']
 
     # if 'regenerate_data' in cfg:
