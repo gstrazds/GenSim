@@ -217,6 +217,7 @@ class RoboScriptGenAgent:
                     task_code_reference_replace_prompt += f'```\n{self.memory.online_code_buffer[key]}\n```\n\n'
                 else:
                     print("missing task reference code:", key)
+                    task_code_reference_replace_prompt = None
 
         return task_code_reference_replace_prompt
 
@@ -317,6 +318,7 @@ class GenCodeRunner:
                 self.chat_log, f"================= TRIAL: {self.curr_trials}", with_print=True)
         np.random.seed(seed)
         random.seed(seed)
+        assert self.task is not None
 
         print(f"{'Oracle ' if use_oracle else ''}demo: {self.n_episodes + 1}/{self.cfg['max_eps']} | Seed: {seed}")
         if use_oracle:
@@ -352,7 +354,7 @@ class GenCodeRunner:
         num_run_eps = 0
         total_rews = 0
 
-        if initial_seed < 0:
+        if initial_seed < 0 and self.task is not None:
             if self.task.mode == 'train':
                 initial_seed = -2
             elif self.task.mode == 'val': # NOTE: beware of increasing val set to >100
@@ -393,8 +395,8 @@ class GenCodeRunner:
         # _task_name = task_spec['task-name']
         mkdir_if_missing(self.cfg['model_output_dir'])
 
+        start_time = time.time()
         try:
-            start_time = time.time()
             # self.agent.api_review(fask_spec['task-name'])
 
             code_, task_name_ = self.agent.implement_task(self.task_spec)  # _task_name
